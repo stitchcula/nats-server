@@ -5462,6 +5462,9 @@ func (mset *stream) state() StreamState {
 func (mset *stream) stateWithDetail(details bool) StreamState {
 	// mset.store does not change once set, so ok to reference here directly.
 	// We do this elsewhere as well.
+	if mset == nil {
+		return StreamState{}
+	}
 	store := mset.store
 	if store == nil {
 		return StreamState{}

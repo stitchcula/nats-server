@@ -2442,40 +2442,50 @@ func (o *consumer) readStoredState(slseq uint64) error {
 
 	// TODO: stream的数据丢失了, check for stream state
 	var (
-		ss   = o.mset.state()
-		cpy  = *state
-		lost bool
+		ss      = o.mset.state()
+		cpy     = *state
+		lost    bool
+		lastSeq = ss.LastSeq
 	)
 
-	if state.Delivered.Consumer > ss.LastSeq {
-		state.Delivered.Consumer = ss.LastSeq
+	if lastSeq == 0 {
+		lastSeq = 1 // TODO: 不知道为啥
+	}
+	if state.Delivered.Consumer > lastSeq {
+		state.Delivered.Consumer = lastSeq
 		lost = true
 	}
-	if state.Delivered.Stream > ss.LastSeq {
-		state.Delivered.Stream = ss.LastSeq
+	if state.Delivered.Stream > lastSeq {
+		state.Delivered.Stream = lastSeq
 		lost = true
 	}
-	if state.AckFloor.Consumer > ss.LastSeq {
-		state.AckFloor.Consumer = ss.LastSeq
+	if state.AckFloor.Consumer > lastSeq {
+		state.AckFloor.Consumer = lastSeq
 		lost = true
 	}
-	if state.AckFloor.Stream > ss.LastSeq {
-		state.AckFloor.Stream = ss.LastSeq
+	if state.AckFloor.Stream > lastSeq {
+		state.AckFloor.Stream = lastSeq
 		lost = true
 	}
 
 	if lost {
-		o.srv.Warnf("Consumer %s force reset to ss.LastSeq, "+
+		o.srv.Warnf("Consumer %s "+
 			"Delivered.Consumer %d, Delivered.Stream %d, "+
 			"AckFloor.Consumer %d, AckFloor.Stream %d, "+
-			"ss.LastSeq %d, ss.FirstSeq %d",
+			"ss.LastSeq %d, ss.FirstSeq %d, "+
+			"force reset to "+
+			"Delivered.Consumer %d, Delivered.Stream %d, "+
+			"AckFloor.Consumer %d, AckFloor.Stream %d",
 			o.name,
 			cpy.Delivered.Consumer, cpy.Delivered.Stream,
 			cpy.AckFloor.Consumer, cpy.AckFloor.Stream,
 			ss.LastSeq, ss.FirstSeq,
+			state.Delivered.Consumer, state.Delivered.Stream,
+			state.AckFloor.Consumer, state.AckFloor.Stream,
 		)
-		
+
 		if err = o.store.Update(state, true); err != nil {
+			o.srv.Warnf("Consumer %s force update state %s", err.Error())
 			return err
 		}
 	}
