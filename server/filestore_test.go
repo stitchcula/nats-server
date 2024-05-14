@@ -1758,13 +1758,13 @@ func TestFileStoreSnapshot(t *testing.T) {
 		state.AckFloor.Consumer = 22
 		state.AckFloor.Stream = 22
 
-		if err := o1.Update(state); err != nil {
+		if err := o1.Update(state, false); err != nil {
 			t.Fatalf("Unexpected error updating state: %v", err)
 		}
 		state.AckFloor.Consumer = 33
 		state.AckFloor.Stream = 33
 
-		if err := o2.Update(state); err != nil {
+		if err := o2.Update(state, false); err != nil {
 			t.Fatalf("Unexpected error updating state: %v", err)
 		}
 
@@ -1924,7 +1924,7 @@ func TestFileStoreConsumer(t *testing.T) {
 
 		updateAndCheck := func() {
 			t.Helper()
-			if err := o.Update(state); err != nil {
+			if err := o.Update(state, false); err != nil {
 				t.Fatalf("Unexpected error updating state: %v", err)
 			}
 			s2, err := o.State()
@@ -1938,7 +1938,7 @@ func TestFileStoreConsumer(t *testing.T) {
 
 		shouldFail := func() {
 			t.Helper()
-			if err := o.Update(state); err == nil {
+			if err := o.Update(state, false); err == nil {
 				t.Fatalf("Expected an error and got none")
 			}
 		}
@@ -4000,7 +4000,7 @@ func TestFileStoreEncrypted(t *testing.T) {
 		state.Delivered.Stream = 22
 		state.AckFloor.Consumer = 11
 		state.AckFloor.Stream = 11
-		err = o.Update(state)
+		err = o.Update(state, false)
 		require_NoError(t, err)
 
 		fs.Stop()
@@ -4818,7 +4818,7 @@ func TestFileStoreConsumerStoreEncodeAfterRestart(t *testing.T) {
 		state.Delivered.Stream = 22
 		state.AckFloor.Consumer = 11
 		state.AckFloor.Stream = 11
-		err = o.Update(state)
+		err = o.Update(state, false)
 		require_NoError(t, err)
 
 		fs.Stop()

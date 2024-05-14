@@ -1420,7 +1420,7 @@ func (ms *memStore) SyncDeleted(dbs DeleteBlocks) {
 	}
 }
 
-func (o *consumerMemStore) Update(state *ConsumerState) error {
+func (o *consumerMemStore) Update(state *ConsumerState, force bool) error {
 	// Sanity checks.
 	if state.AckFloor.Consumer > state.Delivered.Consumer {
 		return fmt.Errorf("bad ack floor for consumer")
@@ -1454,7 +1454,7 @@ func (o *consumerMemStore) Update(state *ConsumerState) error {
 	o.mu.Lock()
 
 	// Check to see if this is an outdated update.
-	if state.Delivered.Consumer < o.state.Delivered.Consumer {
+	if !force && state.Delivered.Consumer < o.state.Delivered.Consumer {
 		o.mu.Unlock()
 		return fmt.Errorf("old update ignored")
 	}

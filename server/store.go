@@ -337,7 +337,7 @@ type ConsumerStore interface {
 	UpdateDelivered(dseq, sseq, dc uint64, ts int64) error
 	UpdateAcks(dseq, sseq uint64) error
 	UpdateConfig(cfg *ConsumerConfig) error
-	Update(*ConsumerState) error
+	Update(state *ConsumerState, force bool) error
 	State() (*ConsumerState, error)
 	BorrowState() (*ConsumerState, error)
 	EncodedState() ([]byte, error)

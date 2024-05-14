@@ -2436,12 +2436,56 @@ func (o *consumer) readStoredState(slseq uint64) error {
 		return nil
 	}
 	state, err := o.store.State()
-	if err == nil {
-		o.applyState(state)
-		if len(o.rdc) > 0 {
-			o.checkRedelivered(slseq)
+	if err != nil {
+		return err
+	}
+
+	// TODO: stream的数据丢失了, check for stream state
+	var (
+		ss   = o.mset.state()
+		cpy  = *state
+		lost bool
+	)
+
+	if state.Delivered.Consumer > ss.LastSeq {
+		state.Delivered.Consumer = ss.LastSeq
+		lost = true
+	}
+	if state.Delivered.Stream > ss.LastSeq {
+		state.Delivered.Stream = ss.LastSeq
+		lost = true
+	}
+	if state.AckFloor.Consumer > ss.LastSeq {
+		state.AckFloor.Consumer = ss.LastSeq
+		lost = true
+	}
+	if state.AckFloor.Stream > ss.LastSeq {
+		state.AckFloor.Stream = ss.LastSeq
+		lost = true
+	}
+
+	if lost {
+		o.srv.Warnf("Consumer %s force reset to ss.LastSeq, "+
+			"Delivered.Consumer %d, Delivered.Stream %d, "+
+			"AckFloor.Consumer %d, AckFloor.Stream %d, "+
+			"ss.LastSeq %d, ss.FirstSeq %d",
+			o.name,
+			cpy.Delivered.Consumer, cpy.Delivered.Stream,
+			cpy.AckFloor.Consumer, cpy.AckFloor.Stream,
+			ss.LastSeq, ss.FirstSeq,
+		)
+		
+		if err = o.store.Update(state, true); err != nil {
+			return err
 		}
 	}
+
+	o.applyState(state)
+
+	if len(o.rdc) > 0 {
+		o.checkRedelivered(slseq)
+	}
+
 	return err
 }
 
@@ -2485,7 +2529,7 @@ func (o *consumer) setStoreState(state *ConsumerState) error {
 	if state == nil || o.store == nil {
 		return nil
 	}
-	err := o.store.Update(state)
+	err := o.store.Update(state, false)
 	if err == nil {
 		o.applyState(state)
 	}
@@ -2517,7 +2561,7 @@ func (o *consumer) writeStoreStateUnlocked() error {
 		Pending:     o.pending,
 		Redelivered: o.rdc,
 	}
-	return o.store.Update(&state)
+	return o.store.Update(&state, false)
 }
 
 // Returns an initial info. Only applicable for non-clustered consumers.

@@ -4898,7 +4898,7 @@ func (js *jetStream) applyConsumerEntries(o *consumer, ce *CommittedEntry, isLea
 					}
 					panic(err.Error())
 				}
-				if err = o.store.Update(state); err != nil {
+				if err = o.store.Update(state, false); err != nil {
 					o.mu.RLock()
 					s, acc, mset, name := o.srv, o.acc, o.mset, o.name
 					o.mu.RUnlock()

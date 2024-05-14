@@ -8683,13 +8683,15 @@ func (o *consumerFileStore) UpdateConfig(cfg *ConsumerConfig) error {
 	return o.writeConsumerMeta()
 }
 
-func (o *consumerFileStore) Update(state *ConsumerState) error {
+func (o *consumerFileStore) Update(state *ConsumerState, force bool) error {
 	o.mu.Lock()
 	defer o.mu.Unlock()
 
 	// Check to see if this is an outdated update.
-	if state.Delivered.Consumer < o.state.Delivered.Consumer || state.AckFloor.Stream < o.state.AckFloor.Stream {
-		return nil
+	if !force {
+		if state.Delivered.Consumer < o.state.Delivered.Consumer || state.AckFloor.Stream < o.state.AckFloor.Stream {
+			return nil
+		}
 	}
 
 	// Sanity checks.
