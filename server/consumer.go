@@ -2448,11 +2448,11 @@ func (o *consumer) readStoredState(slseq uint64) error {
 		lastSeq = ss.LastSeq
 	)
 
-	if lastSeq == 0 {
-		lastSeq = 1 // TODO: 不知道为啥
-	}
 	if state.Delivered.Consumer > lastSeq {
 		state.Delivered.Consumer = lastSeq
+		if state.Delivered.Consumer == 0 {
+			state.Delivered.Consumer = 1
+		}
 		lost = true
 	}
 	if state.Delivered.Stream > lastSeq {
